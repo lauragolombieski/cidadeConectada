@@ -1,15 +1,15 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 interface ServiceItem {
   id: string;
@@ -115,7 +115,7 @@ export default function PublicServicesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#E6F4FE',
+    backgroundColor: '#ffffffff',
   },
   header: {
     flexDirection: 'row',
@@ -123,9 +123,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: '#E6F4FE',
+    backgroundColor: '#ffffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#DDD',
+    borderBottomColor: '#e5e5e5ff',
   },
   backButton: {
     padding: 5,
@@ -135,7 +135,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
+
   },
   headerPlaceholder: {
     width: 34,
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   banner: {
-    backgroundColor: '#E6F4FE',
+    backgroundColor: '#f4f3f3ff',
     padding: 16,
     marginVertical: 16,
     marginHorizontal: 20,

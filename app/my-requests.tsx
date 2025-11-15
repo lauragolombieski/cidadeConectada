@@ -1,15 +1,18 @@
-import React from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
   ScrollView,
+  StyleSheet,
+  Text,
   TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { requestAPI } from '../services/api';
 
 type RequestStatus = 'waiting' | 'in_progress' | 'completed';
 
@@ -24,40 +27,72 @@ interface RequestItem {
   details?: string[];
 }
 
-const requests: RequestItem[] = [
-  {
-    id: '1',
-    type: 'report',
-    title: 'Problema Relatado',
-    description: 'Buraco na Rua Marechal Floriano',
-    status: 'waiting',
-    iconName: 'mail',
-    iconColor: '#009688',
-  },
-  {
-    id: '2',
-    type: 'report',
-    title: 'Problema Relatado',
-    description: 'Iluminação fraca na Praça XV',
-    status: 'completed',
-    iconName: 'mail',
-    iconColor: '#009688',
-  },
-  {
-    id: '3',
-    type: 'help',
-    title: 'Pedido de Ajuda',
-    description: 'Pessoa machucada em briga de trânsito',
-    status: 'in_progress',
-    iconName: 'warning',
-    iconColor: '#FFC107',
-    details: [
-      'Ambulância enviada',
-      'Polícia enviada',
-      'Localização enviada via GPS',
-    ],
-  },
-];
+const mapStatusFromAPI = (apiStatus: string): RequestStatus => {
+  switch (apiStatus) {
+    case 'esperando_analise':
+      return 'waiting';
+    case 'em_andamento':
+      return 'in_progress';
+    case 'concluido':
+      return 'completed';
+    default:
+      return 'waiting';
+  }
+};
+
+const mapRequestFromAPI = (apiRequest: any): RequestItem | null => {
+  if (apiRequest.request_type === 'feedback') {
+    return null;
+  }
+
+  const id = apiRequest.report_id?.toString() || 
+             apiRequest.request_id?.toString() || 
+             apiRequest.feedback_id?.toString() || 
+             '0';
+  
+  const description = apiRequest.message || 
+                      apiRequest.description || 
+                      apiRequest.feedback_text || 
+                      '';
+  
+  const status = mapStatusFromAPI(apiRequest.status || 'esperando_analise');
+  
+  let title = 'Problema Relatado';
+  let iconName = 'mail';
+  let iconColor = '#009688';
+  let details: string[] | undefined;
+
+  if (apiRequest.request_type === 'help') {
+    title = 'Pedido de Ajuda';
+    iconName = 'warning';
+    iconColor = '#FFC107';
+    
+    details = [];
+    if (apiRequest.request_ambulance === 1) {
+      details.push('Ambulância enviada');
+    }
+    if (apiRequest.request_police === 1) {
+      details.push('Polícia enviada');
+    }
+    if (apiRequest.latitude && apiRequest.longitude) {
+      details.push('Localização enviada via GPS');
+    }
+    if (details.length === 0) {
+      details = undefined;
+    }
+  }
+
+  return {
+    id,
+    type: apiRequest.request_type === 'help' ? 'help' : 'report',
+    title,
+    description,
+    status,
+    iconName,
+    iconColor,
+    details,
+  };
+};
 
 const statusConfig = {
   waiting: {
@@ -78,13 +113,72 @@ const statusConfig = {
 };
 
 export default function MyRequestsScreen() {
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = async () => {
+    try {
+      setIsLoading(true);
+      const response = await requestAPI.getAll();
+      
+      const mappedRequests = (response.requests || [])
+        .map(mapRequestFromAPI)
+        .filter((request: RequestItem | null): request is RequestItem => request !== null);
+      
+      setRequests(mappedRequests);
+    } catch (error: any) {
+      console.error('Erro ao carregar solicitações:', error);
+      Alert.alert(
+        'Erro',
+        error.message || 'Erro ao carregar solicitações. Tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleBack = () => {
     router.back();
   };
 
-  const handleDelete = (id: string) => {
-    // TODO: Implementar lógica de exclusão
-    console.log('Deletar solicitação:', id);
+  const handleDelete = (request: RequestItem) => {
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja excluir esta solicitação?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingId(request.id);
+              await requestAPI.delete(request.id, request.type);
+              
+              Alert.alert('Sucesso', 'Solicitação excluída com sucesso!');
+              await loadRequests();
+            } catch (error: any) {
+              console.error('Erro ao excluir solicitação:', error);
+              Alert.alert(
+                'Erro',
+                error.message || 'Erro ao excluir solicitação. Tente novamente.'
+              );
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const getStatusIndicator = (status: RequestStatus) => {
@@ -141,43 +235,63 @@ export default function MyRequestsScreen() {
         </View>
 
         {/* Requests List */}
-        <View style={styles.requestsList}>
-          {requests.map((request, index) => (
-            <View key={request.id}>
-              <View style={styles.requestItem}>
-                <View style={[styles.requestIconContainer, { backgroundColor: `${request.iconColor}20` }]}>
-                  <Ionicons
-                    name={request.iconName as any}
-                    size={24}
-                    color={request.iconColor}
-                  />
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFD700" />
+            <Text style={styles.loadingText}>Carregando solicitações...</Text>
+          </View>
+        ) : requests.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="document-text-outline" size={64} color="#CCC" />
+            <Text style={styles.emptyText}>Nenhuma solicitação encontrada</Text>
+            <Text style={styles.emptySubtext}>
+              Suas solicitações aparecerão aqui quando você fizer uma
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.requestsList}>
+            {requests.map((request, index) => (
+              <View key={request.id}>
+                <View style={styles.requestItem}>
+                  <View style={[styles.requestIconContainer, { backgroundColor: `${request.iconColor}20` }]}>
+                    <Ionicons
+                      name={request.iconName as any}
+                      size={24}
+                      color={request.iconColor}
+                    />
+                  </View>
+                  <View style={styles.requestContent}>
+                    <Text style={styles.requestTitle}>{request.title}</Text>
+                    <Text style={styles.requestDescription}>{request.description}</Text>
+                    {request.details && request.details.length > 0 && (
+                      <View style={styles.requestDetails}>
+                        {request.details.map((detail, detailIndex) => (
+                          <Text key={detailIndex} style={styles.requestDetailItem}>
+                            • {detail}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.requestActions}>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(request)}
+                      style={styles.deleteButton}
+                      disabled={deletingId === request.id}>
+                      {deletingId === request.id ? (
+                        <ActivityIndicator size="small" color="#666" />
+                      ) : (
+                        <Ionicons name="trash" size={20} color="#666" />
+                      )}
+                    </TouchableOpacity>
+                    {getStatusIndicator(request.status)}
+                  </View>
                 </View>
-                <View style={styles.requestContent}>
-                  <Text style={styles.requestTitle}>{request.title}</Text>
-                  <Text style={styles.requestDescription}>{request.description}</Text>
-                  {request.details && request.details.length > 0 && (
-                    <View style={styles.requestDetails}>
-                      {request.details.map((detail, detailIndex) => (
-                        <Text key={detailIndex} style={styles.requestDetailItem}>
-                          • {detail}
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <View style={styles.requestActions}>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(request.id)}
-                    style={styles.deleteButton}>
-                    <Ionicons name="trash" size={20} color="#666" />
-                  </TouchableOpacity>
-                  {getStatusIndicator(request.status)}
-                </View>
+                {index < requests.length - 1 && <View style={styles.divider} />}
               </View>
-              {index < requests.length - 1 && <View style={styles.divider} />}
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -317,6 +431,36 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#EEE',
     marginLeft: 68,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#666',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingHorizontal: 40,
   },
 });
 

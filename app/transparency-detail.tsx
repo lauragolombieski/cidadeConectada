@@ -1,17 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router, useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
   Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 interface Employee {
   id: string;
@@ -28,7 +28,7 @@ interface DepartmentData {
 const departmentData: Record<string, DepartmentData> = {
   prefeitura: {
     title: 'Prefeitura',
-    logoText: 'FORTALEZA PREFEITURA',
+    logoText: 'Prefeitura de Fortaleza',
     employees: [
       { id: '1', role: 'Prefeito', salary: 'R$ 12.500,00' },
       { id: '2', role: 'Vice-Prefeita', salary: 'R$ 8.500,00' },
@@ -39,7 +39,7 @@ const departmentData: Record<string, DepartmentData> = {
   },
   camara: {
     title: 'Câmara',
-    logoText: 'CÂMARA MUNICIPAL DE FORTALEZA',
+    logoText: 'Câmara Municipal de Fortaleza',
     employees: [
       { id: '1', role: 'Presidente da Câmara', salary: 'R$ 8.500,00' },
       { id: '2', role: 'Analista de Tesouraria', salary: 'R$ 6.500,00' },
@@ -210,10 +210,9 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logoImage: {
-    width: 200,
+    width: 300,
     height: 120,
     resizeMode: 'contain',
-    marginBottom: 10,
   },
   logoText: {
     fontSize: 16,

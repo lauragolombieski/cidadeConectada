@@ -12,30 +12,64 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors['light'].tint,
+        tabBarInactiveTintColor: Colors['light'].tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+          marginTop: 4,
+        },
+        tabBarStyle: {
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: 70,
+        },
+        tabBarItemStyle: {
+          width: 'auto',
+          minWidth: 120,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingHorizontal: 30,
+          marginTop: 4,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Login',
+          href: null,
           tabBarStyle: { display: 'none' },
-          tabBarButton: () => null,
         }}
       />
       <Tabs.Screen
         name="services"
         options={{
           title: 'Serviços Oferecidos',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
+          tabBarLabel: 'Serviços Oferecidos',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol 
+              size={26} 
+              name="star.fill" 
+              color={color} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="user"
         options={{
           title: 'Usuário',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          tabBarLabel: 'Usuário',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol 
+              size={26} 
+              name="person.fill" 
+              color={color} 
+            />
+          ),
         }}
       />
     </Tabs>

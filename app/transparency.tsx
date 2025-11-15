@@ -1,17 +1,17 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
   Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 type Department = 'prefeitura' | 'camara' | 'colegios' | 'saude';
 
@@ -174,10 +174,9 @@ const styles = StyleSheet.create({
   logoSection: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
   },
   logoImage: {
-    width: 250,
+    width: 300,
     height: 150,
     resizeMode: 'contain',
   },

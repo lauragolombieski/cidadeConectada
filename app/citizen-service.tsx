@@ -1,19 +1,21 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { requestAPI } from '../services/api';
 
 type ServiceType = 'report' | 'help' | 'feedback' | null;
 
@@ -25,31 +27,74 @@ export default function CitizenServiceScreen() {
   const [requestAmbulance, setRequestAmbulance] = useState(false);
   const [requestPolice, setRequestPolice] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleServiceSelect = (service: ServiceType) => {
     setActiveService(service);
   };
 
-  const handleSend = () => {
-    // TODO: Implementar lógica de envio
-    console.log('Enviando solicitação:', {
-      service: activeService,
-      reportText,
-      helpText,
-      feedbackText,
-      requestAmbulance,
-      requestPolice,
-    });
-    
-    // Mostrar modal de confirmação
-    setShowModal(true);
-    
-    // Limpar campos
-    setReportText('');
-    setHelpText('');
-    setFeedbackText('');
-    setRequestAmbulance(false);
-    setRequestPolice(false);
+  const handleSend = async () => {
+    if (!activeService) {
+      Alert.alert('Erro', 'Por favor, selecione um serviço');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      let requestData: any = {
+        type: activeService,
+      };
+
+      switch (activeService) {
+        case 'report':
+          if (!reportText.trim()) {
+            Alert.alert('Erro', 'Por favor, descreva o problema');
+            setIsLoading(false);
+            return;
+          }
+          requestData.description = reportText.trim();
+          break;
+
+        case 'help':
+          if (!helpText.trim()) {
+            Alert.alert('Erro', 'Por favor, descreva sua situação');
+            setIsLoading(false);
+            return;
+          }
+          requestData.description = helpText.trim();
+          requestData.request_ambulance = requestAmbulance ? 1 : 0;
+          requestData.request_police = requestPolice ? 1 : 0;
+          break;
+
+        case 'feedback':
+          if (!feedbackText.trim()) {
+            Alert.alert('Erro', 'Por favor, escreva seu feedback');
+            setIsLoading(false);
+            return;
+          }
+          requestData.feedback_text = feedbackText.trim();
+          break;
+      }
+
+      await requestAPI.create(requestData);
+
+      setShowModal(true);
+      
+      setReportText('');
+      setHelpText('');
+      setFeedbackText('');
+      setRequestAmbulance(false);
+      setRequestPolice(false);
+    } catch (error: any) {
+      console.error('Erro ao enviar solicitação:', error);
+      Alert.alert(
+        'Erro',
+        error.message || 'Erro ao enviar solicitação. Tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -87,8 +132,6 @@ export default function CitizenServiceScreen() {
           {/* Card 1: Relatar problema */}
           <View style={[styles.serviceCard, activeService === 'report' && styles.activeCard]}>
             <View style={styles.cardHeader}>
-              {/* TODO: Adicionar imagem do envelope verde com checkmark aqui */}
-              {/* <Image source={require('@/assets/images/report-problem-icon.png')} style={styles.cardIcon} /> */}
               <View style={[styles.iconPlaceholder, styles.greenIcon]}>
                 <Ionicons name="mail" size={24} color="#4CAF50" />
               </View>
@@ -120,8 +163,13 @@ export default function CitizenServiceScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                  <Text style={styles.sendButtonText}>Enviar</Text>
+                <TouchableOpacity 
+                  style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
+                  onPress={handleSend}
+                  disabled={isLoading}>
+                  <Text style={styles.sendButtonText}>
+                    {isLoading ? 'Enviando...' : 'Enviar'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -138,8 +186,6 @@ export default function CitizenServiceScreen() {
           {/* Card 2: Preciso de ajuda */}
           <View style={[styles.serviceCard, activeService === 'help' && styles.activeCard]}>
             <View style={styles.cardHeader}>
-              {/* TODO: Adicionar imagem do ícone de exclamação amarelo aqui */}
-              {/* <Image source={require('@/assets/images/need-help-icon.png')} style={styles.cardIcon} /> */}
               <View style={[styles.iconPlaceholder, styles.yellowIcon]}>
                 <Ionicons name="warning" size={24} color="#FFC107" />
               </View>
@@ -193,8 +239,13 @@ export default function CitizenServiceScreen() {
                     <Text style={styles.checkboxLabel}>Solicitar polícia</Text>
                   </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                  <Text style={styles.sendButtonText}>Enviar</Text>
+                <TouchableOpacity 
+                  style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
+                  onPress={handleSend}
+                  disabled={isLoading}>
+                  <Text style={styles.sendButtonText}>
+                    {isLoading ? 'Enviando...' : 'Enviar'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -211,8 +262,6 @@ export default function CitizenServiceScreen() {
           {/* Card 3: Fornecer feedback */}
           <View style={[styles.serviceCard, activeService === 'feedback' && styles.activeCard]}>
             <View style={styles.cardHeader}>
-              {/* TODO: Adicionar imagem do documento verde com lápis aqui */}
-              {/* <Image source={require('@/assets/images/feedback-icon.png')} style={styles.cardIcon} /> */}
               <View style={[styles.iconPlaceholder, styles.greenIcon]}>
                 <Ionicons name="document-text" size={24} color="#4CAF50" />
               </View>
@@ -244,8 +293,13 @@ export default function CitizenServiceScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-                <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                  <Text style={styles.sendButtonText}>Enviar</Text>
+                <TouchableOpacity 
+                  style={[styles.sendButton, isLoading && styles.sendButtonDisabled]} 
+                  onPress={handleSend}
+                  disabled={isLoading}>
+                  <Text style={styles.sendButtonText}>
+                    {isLoading ? 'Enviando...' : 'Enviar'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -279,13 +333,6 @@ export default function CitizenServiceScreen() {
                 style={[styles.modalButton, styles.modalButtonOk]}
                 onPress={handleCloseModal}>
                 <Text style={styles.modalButtonText}>Ok</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={handleCloseModal}>
-                <Text style={[styles.modalButtonText, styles.modalButtonCancelText]}>
-                  Cancelar
-                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -321,7 +368,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   headerPlaceholder: {
     width: 34,
@@ -335,6 +382,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 20,
+    textAlign: 'center'
   },
   serviceCard: {
     backgroundColor: '#FFFFFF',
@@ -352,7 +400,7 @@ const styles = StyleSheet.create({
   },
   activeCard: {
     borderWidth: 2,
-    borderColor: '#9C27B0',
+    borderColor: 'rgb(177 177 48)',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -447,19 +495,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   checkboxChecked: {
-    backgroundColor: '#9C27B0',
-    borderColor: '#9C27B0',
+    backgroundColor: 'rgb(177 177 48)',
+    borderColor: 'rgb(177 177 48)',
   },
   checkboxLabel: {
     fontSize: 16,
     color: '#333',
   },
   sendButton: {
-    backgroundColor: '#9C27B0',
+    backgroundColor: 'rgb(177 177 48)',
     borderRadius: 25,
     padding: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    opacity: 0.6,
   },
   sendButtonText: {
     fontSize: 16,
@@ -515,7 +566,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalButtonOk: {
-    backgroundColor: '#9C27B0',
+    backgroundColor: 'rgb(177, 177, 48)',
   },
   modalButtonCancel: {
     backgroundColor: '#F5F5F5',

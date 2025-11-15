@@ -1,33 +1,53 @@
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
+import { authAPI } from '../../services/api';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    // TODO: Implementar lógica de login
-    console.log('Login:', { email, password });
-    // Após login bem-sucedido, navegar para a tela principal
-    router.replace('/(tabs)/services');
+  const handleLogin = async () => {
+    if (!email.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o email');
+      return;
+    }
+
+    if (!password) {
+      Alert.alert('Erro', 'Por favor, preencha a senha');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      await authAPI.login(email.trim(), password);
+      
+      router.replace('/(tabs)/services');
+    } catch (error: any) {
+      console.error('Erro ao fazer login:', error);
+      Alert.alert('Erro', error.message || 'Email ou senha inválidos');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = () => {
-    // TODO: Implementar navegação para recuperação de senha
-    console.log('Esqueci a senha');
+    return;
   };
 
   const handleRegister = () => {
@@ -92,8 +112,13 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           {/* Login Button */}
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Acessar</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={isLoading}>
+            <Text style={styles.loginButtonText}>
+              {isLoading ? 'Entrando...' : 'Acessar'}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -192,6 +217,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
     marginBottom: 20,
+  },
+  loginButtonDisabled: {
+    opacity: 0.6,
   },
   loginButtonText: {
     fontSize: 18,

@@ -1,19 +1,21 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-  View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
+  View,
 } from 'react-native';
-import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import { authAPI } from '../services/api';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
@@ -26,16 +28,86 @@ export default function RegisterScreen() {
     password: '',
     confirmPassword: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleRegister = () => {
-    // TODO: Implementar validação e lógica de cadastro
-    console.log('Register:', formData);
-    // Após cadastro bem-sucedido, navegar para a tela principal
-    router.replace('/(tabs)/services');
+  const handleRegister = async () => {
+
+    if (!formData.fullName.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o nome completo');
+      return;
+    }
+    if (!formData.email.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o email');
+      return;
+    }
+
+    if (!formData.password) {
+      Alert.alert('Erro', 'Por favor, preencha a senha');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Erro', 'As senhas não coincidem');
+      return;
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o número de telefone');
+      return;
+    }
+
+    if (!formData.cpf.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o CPF');
+      return;
+    }
+
+    if (!formData.cep.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o CEP');
+      return;
+    }
+
+    if (!formData.fullAddress.trim()) {
+      Alert.alert('Erro', 'Por favor, preencha o endereço completo');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      await authAPI.register({
+        email: formData.email.trim(),
+        password: formData.password,
+        full_name: formData.fullName.trim(),
+        phone_number: formData.phoneNumber.trim(),
+        cpf: formData.cpf.trim(),
+        cep: formData.cep.trim(),
+        full_address: formData.fullAddress.trim(),
+      });
+
+      Alert.alert('Sucesso', 'Cadastro realizado com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/(tabs)/services'),
+        },
+      ]);
+    } catch (error: any) {
+      console.error('Erro ao registrar:', error);
+      Alert.alert(
+        'Erro',
+        error.message || 'Erro ao realizar cadastro. Tente novamente.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -174,13 +246,18 @@ export default function RegisterScreen() {
           </View>
 
           {/* Finalize Button */}
-          <TouchableOpacity style={styles.finalizeButton} onPress={handleRegister}>
-            <Text style={styles.finalizeButtonText}>Finalizar</Text>
+          <TouchableOpacity 
+            style={[styles.finalizeButton, isLoading && styles.finalizeButtonDisabled]} 
+            onPress={handleRegister}
+            disabled={isLoading}>
+            <Text style={styles.finalizeButtonText}>
+              {isLoading ? 'Cadastrando...' : 'Finalizar'}
+            </Text>
           </TouchableOpacity>
 
           {/* Logo at Bottom */}
           <View style={styles.logoContainer}>
-            <Image source={require('../assets/images/image-login.png')} style={styles.logoImage} />
+            <Image source={require('../assets/images/assinatura.png')} style={styles.logoImage} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -262,6 +339,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  finalizeButtonDisabled: {
+    opacity: 0.6,
   },
   finalizeButtonText: {
     fontSize: 18,
